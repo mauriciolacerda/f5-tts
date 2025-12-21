@@ -1,0 +1,24 @@
+# Docker Compose para testes locais (opcional)
+version: '3.8'
+
+services:
+  f5-tts:
+    build: .
+    environment:
+      - GITHUB_REPO_URL=https://github.com/seu-usuario/f5-tts.git
+      - GCS_CREDENTIALS_JSON=${GCS_CREDENTIALS_JSON}
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+    volumes:
+      - audio_cache:/tmp/audio_cache
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  audio_cache:

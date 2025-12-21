@@ -1,0 +1,18 @@
+# Dependências extras para o handler F5 TTS no RunPod
+# Este arquivo será instalado automaticamente pelo entrypoint.sh
+
+# RunPod SDK
+runpod>=1.6.0
+
+# F5 TTS e dependências de áudio
+f5-tts>=0.0.1
+torchaudio>=2.3.0
+soundfile>=0.12.1
+librosa>=0.10.1
+
+# Google Cloud Storage
+google-cloud-storage>=2.14.0
+
+# Utilidades
+numpy>=1.24.0
+scipy>=1.11.0
