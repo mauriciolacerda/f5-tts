@@ -13,6 +13,42 @@ f5-tts/
 └── README.md           # Este arquivo
 ```
 
+## 🌍 Suporte Multi-Idioma
+
+O modelo base oficial suporta **Inglês e Chinês**. Para outros idiomas, use modelos fine-tuned da comunidade:
+
+| Idioma | Código | Modelo HuggingFace |
+|--------|--------|-------------------|
+| Inglês/Chinês | `en`/`zh` | Modelo padrão (oficial) |
+| Espanhol | `es` | jpgallegoar/F5-Spanish |
+| Francês | `fr` | RASPIAUDIO/F5-French |
+| Alemão | `de` | hvoss-techfak/F5-German |
+| Italiano | `it` | alien79/F5-Italian |
+| Japonês | `ja` | Jmica/F5-Japanese |
+| Russo | `ru` | HotDro4illa/F5-Russian |
+| Hindi | `hi` | SPRINGLab/F5-Hindi-Small |
+| Finlandês | `fi` | AsmoKoskinen/F5-Finnish |
+
+### Baixar Modelos de Idiomas
+
+```bash
+# Baixar modelo específico
+./download_models.sh es  # Espanhol
+
+# Baixar todos os modelos
+./download_models.sh all
+```
+
+### Configurar no RunPod
+
+Adicione a variável de ambiente `F5_CUSTOM_MODELS`:
+
+```
+F5_CUSTOM_MODELS = es:/root/.cache/f5-tts/es/model.safetensors:/root/.cache/f5-tts/es/vocab.txt,fr:/root/.cache/f5-tts/fr/model.safetensors:/root/.cache/f5-tts/fr/vocab.txt
+```
+
+Formato: `LANG_CODE:MODEL_PATH:VOCAB_PATH,LANG_CODE:MODEL_PATH:VOCAB_PATH,...`
+
 ## 🚀 Como Usar
 
 ### 1. Build da Imagem Docker
@@ -33,6 +69,7 @@ No RunPod, configure as seguintes variáveis de ambiente:
 
 **Obrigatórias:**
 - `GITHUB_REPO_URL`: URL do seu repositório (ex: `https://github.com/seu-usuario/f5-tts.git`)
+- `GITHUB_TOKEN`: Token de acesso pessoal do GitHub (necessário para repositórios privados)
 - `GCS_CREDENTIALS_JSON`: JSON com credenciais da Service Account do Google Cloud
 - `GCS_BUCKET_NAME`: Nome do bucket do GCS para armazenar áudios
 
@@ -48,7 +85,9 @@ Envie jobs para o RunPod com o seguinte formato:
   "input": {
     "gen_text": "Olá, este é um teste de geração de voz com F5 TTS.",
     "ref_audio_url": "gs://seu-bucket/referencias/voz_01.wav",
+    "ref_text": "Texto falado no áudio de referência",
     "voice_id": "voz_01",
+    "language": "es",
     "output_path": "outputs/voz_01/audio_123.wav"
   }
 }
@@ -57,7 +96,9 @@ Envie jobs para o RunPod com o seguinte formato:
 **Parâmetros:**
 - `gen_text`: Texto para gerar o áudio (obrigatório)
 - `ref_audio_url`: URL do áudio de referência no GCS (obrigatório)
+- `ref_text`: Texto do áudio de referência - **obrigatório** (obrigatório)
 - `voice_id`: Identificador único da voz para cache (obrigatório)
+- `language`: Código do idioma - `default`, `en`, `zh`, `es`, `fr`, `de`, `it`, `ja`, `ru`, `hi`, `fi` (opcional, padrão: `default`)
 - `output_path`: Caminho no bucket GCS para salvar o áudio (opcional)
 
 ### 5. Formato de Saída
@@ -92,6 +133,14 @@ O handler retorna:
 - Reduz tempo de cold start
 
 ## 🔐 Configuração do Google Cloud Storage
+
+### 0. Criar Token do GitHub (para repositórios privados)
+
+1. Acesse: https://github.com/settings/tokens
+2. Clique em "Generate new token" → "Generate new token (classic)"
+3. Selecione o escopo: `repo` (Full control of private repositories)
+4. Gere o token e copie (ex: `ghp_xxxxxxxxxxxxxxxxxxxx`)
+5. Use este token na variável `GITHUB_TOKEN` no RunPod
 
 ### 1. Criar Service Account
 
@@ -143,6 +192,7 @@ docker logs container_id
 ```bash
 docker run -it \
   -e GITHUB_REPO_URL=https://github.com/seu-usuario/f5-tts.git \
+  -e GITHUB_TOKEN=ghp_seu_token_aqui \
   -e GCS_CREDENTIALS_JSON='{"type":"service_account",...}' \
   -e GCS_BUCKET_NAME=seu-bucket \
   seu-usuario/f5-tts-runpod:latest
