@@ -15,15 +15,40 @@ download_model() {
     echo "Baixando modelo $lang de $repo..."
     mkdir -p "$CACHE_DIR/$lang"
     
-    wget -q --show-progress \
+    # Baixar modelo com retry e validação
+    if wget -q --show-progress --tries=3 \
         "https://huggingface.co/$repo/resolve/main/$model_file" \
-        -O "$CACHE_DIR/$lang/model.safetensors"
+        -O "$CACHE_DIR/$lang/model.safetensors"; then
+        
+        # Verificar se o arquivo não está vazio
+        if [ ! -s "$CACHE_DIR/$lang/model.safetensors" ]; then
+            echo "✗ Erro: Modelo $lang está vazio!"
+            rm -f "$CACHE_DIR/$lang/model.safetensors"
+            return 1
+        fi
+    else
+        echo "✗ Erro ao baixar modelo $lang"
+        return 1
+    fi
     
-    wget -q --show-progress \
+    # Baixar vocab
+    if wget -q --show-progress --tries=3 \
         "https://huggingface.co/$repo/resolve/main/$vocab_file" \
-        -O "$CACHE_DIR/$lang/vocab.txt"
+        -O "$CACHE_DIR/$lang/vocab.txt"; then
+        
+        if [ ! -s "$CACHE_DIR/$lang/vocab.txt" ]; then
+            echo "✗ Erro: Vocab $lang está vazio!"
+            rm -f "$CACHE_DIR/$lang/vocab.txt"
+            return 1
+        fi
+    else
+        echo "✗ Erro ao baixar vocab $lang"
+        return 1
+    fi
     
     echo "✓ Modelo $lang baixado com sucesso!"
+    echo "  Tamanho modelo: $(du -h "$CACHE_DIR/$lang/model.safetensors" | cut -f1)"
+    echo "  Tamanho vocab: $(du -h "$CACHE_DIR/$lang/vocab.txt" | cut -f1)"
 }
 
 # Definir modelos disponíveis
