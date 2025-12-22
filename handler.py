@@ -238,13 +238,13 @@ def handler(job):
         
         # Se ref_text não fornecido, usar texto genérico para evitar transcrição
         if not ref_text:
+            ref_text = "Audio de referência para clonagem de voz."
+        
         # Selecionar modelo baseado no idioma
         if language not in f5tts_models:
             return {"error": f"Idioma '{language}' não disponível. Modelos disponíveis: {list(f5tts_models.keys())}"}
         
         f5tts = f5tts_models[language]
-        
-            ref_text = "Audio de referência para clonagem de voz."
         
         logger.info(f"Processando job {job['id']}")
         logger.info(f"Texto: {gen_text[:100]}...")
