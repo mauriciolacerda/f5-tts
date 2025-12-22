@@ -78,7 +78,7 @@ if custom_models_config:
                 continue
             
             logger.info(f"Carregando modelo {lang_code}: {model_path}")
-            f5tts_models[lang_code] = F5TTS(model_type="F5-TTS", ckpt_file=model_path, vocab_file=vocab_path)
+            f5tts_models[lang_code] = F5TTS(ckpt_file=model_path, vocab_file=vocab_path)
             logger.info(f"Modelo {lang_code} carregado com sucesso!")
         except Exception as e:
             logger.error(f"Erro ao carregar modelo {model_config}: {e}")
