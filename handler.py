@@ -51,6 +51,9 @@ logger.info("Carregando modelo F5 TTS...")
 f5tts = F5TTS()
 logger.info("Modelo F5 TTS carregado com sucesso!")
 
+# Variável para controlar se a transcrição automática deve ser desabilitada
+DISABLE_AUTO_TRANSCRIPTION = os.environ.get("DISABLE_AUTO_TRANSCRIPTION", "true").lower() == "true"
+
 
 def download_from_gcs(gcs_url: str, local_path: str) -> bool:
     """
@@ -161,6 +164,7 @@ def handler(job):
         "input": {
             "gen_text": "Texto para gerar o áudio",
             "ref_audio_url": "gs://bucket/path/to/reference.wav",
+            "ref_text": "Texto falado no áudio de referência (opcional)",
             "voice_id": "identificador_unico_da_voz",
             "output_path": "path/to/output.wav" (opcional)
         }
@@ -179,6 +183,7 @@ def handler(job):
         # Validar entrada
         gen_text = job_input.get("gen_text")
         ref_audio_url = job_input.get("ref_audio_url")
+        ref_text = job_input.get("ref_text", "")  # Texto de referência opcional
         voice_id = job_input.get("voice_id")
         output_path = job_input.get("output_path", f"outputs/{voice_id}/output_{job['id']}.wav")
         
@@ -188,6 +193,14 @@ def handler(job):
             return {"error": "ref_audio_url é obrigatório"}
         if not voice_id:
             return {"error": "voice_id é obrigatório"}
+        
+        # IMPORTANTE: ref_text é obrigatório se transcrição automática estiver desabilitada
+        if DISABLE_AUTO_TRANSCRIPTION and not ref_text:
+            return {"error": "ref_text é obrigatório (transcrição automática desabilitada para evitar erros de compatibilidade)"}
+        
+        # Se ref_text não fornecido, usar texto genérico para evitar transcrição
+        if not ref_text:
+            ref_text = "Audio de referência para clonagem de voz."
         
         logger.info(f"Processando job {job['id']}")
         logger.info(f"Texto: {gen_text[:100]}...")
@@ -202,11 +215,12 @@ def handler(job):
         
         try:
             # Realizar inferência com F5 TTS
-            logger.info("Iniciando inferência F5 TTS...")
+            logger.info(f"Ref text: {ref_text if ref_text else 'Auto-transcrição'}")
             
             # Gerar áudio usando a API do F5 TTS
             f5tts.infer(
                 ref_file=ref_audio_path,
+                ref_text=ref_text,  # Vazio = transcrição automática, ou texto fornecid
                 ref_text="",  # Deixar vazio para usar reconhecimento automático
                 gen_text=gen_text,
                 file_wave=output_file,
