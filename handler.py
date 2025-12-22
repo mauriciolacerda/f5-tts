@@ -215,13 +215,13 @@ def handler(job):
         
         try:
             # Realizar inferência com F5 TTS
+            logger.info("Iniciando inferência F5 TTS...")
             logger.info(f"Ref text: {ref_text if ref_text else 'Auto-transcrição'}")
             
             # Gerar áudio usando a API do F5 TTS
             f5tts.infer(
                 ref_file=ref_audio_path,
-                ref_text=ref_text,  # Vazio = transcrição automática, ou texto fornecid
-                ref_text="",  # Deixar vazio para usar reconhecimento automático
+                ref_text=ref_text,
                 gen_text=gen_text,
                 file_wave=output_file,
                 remove_silence=True
