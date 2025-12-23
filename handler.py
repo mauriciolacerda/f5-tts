@@ -184,11 +184,10 @@ def handler(job):
         # Validar entrada
         gen_text = job_input.get("gen_text")
         ref_audio_url = job_input.get("ref_audio_url")
-        ref_text = job_input.get("ref_text", "")  # Texto de referência opcional
-        language = job_input.get("language", "de
+        ref_text = job_input.get("ref_text", "")
         voice_id = job_input.get("voice_id")
         output_path = job_input.get("output_path", f"outputs/{voice_id}/output_{job['id']}.wav")
-        speed = job_input.get("speed",
+        speed = job_input.get("speed", 1.0)
         if not gen_text:
             return {"error": "gen_text é obrigatório"}
         if not ref_audio_url:
