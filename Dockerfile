@@ -63,11 +63,8 @@ RUN python -c "from f5_tts.infer.infer_cli import infer_process; print('Download
 COPY download_models.sh /app/download_models.sh
 RUN chmod +x /app/download_models.sh
 
-# Não baixar modelos aqui - serão baixados dinamicamente no entrypoint.sh conforme configurado
-# Se preferir embutir modelos na imagem, descomente as linhas abaixo:
-# RUN /app/download_models.sh es
-# RUN /app/download_models.sh fr
-# RUN /app/download_models.sh de
+# Baixar modelo espanhol (será usado para substituir o modelo padrão)
+RUN /app/download_models.sh es
 
 # Criar diretório para cache de áudio
 RUN mkdir -p /tmp/audio_cache

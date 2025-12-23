@@ -48,42 +48,8 @@ else:
 
 # Inicializar modelo F5 TTS
 logger.info("Carregando modelo F5 TTS...")
-
-# Cache de modelos por idioma
-f5tts_models = {}
-
-# Modelo padrão (EN/ZH)
-logger.info("Carregando modelo padrão (EN/ZH)...")
-f5tts_models["default"] = F5TTS()
-f5tts_models["en"] = f5tts_models["default"]  # Alias
-f5tts_models["zh"] = f5tts_models["default"]  # Alias
-
-# Configuração de modelos customizados via variável de ambiente
-# Formato: LANG_CODE:MODEL_PATH:VOCAB_PATH,LANG_CODE:MODEL_PATH:VOCAB_PATH,...
-custom_models_config = os.environ.get("F5_CUSTOM_MODELS", "")
-
-if custom_models_config:
-    logger.info("Carregando modelos customizados...")
-    for model_config in custom_models_config.split(","):
-        try:
-            parts = model_config.strip().split(":")
-            if len(parts) != 3:
-                logger.warning(f"Configuração inválida ignorada: {model_config}")
-                continue
-            
-            lang_code, model_path, vocab_path = parts
-            
-            if not os.path.exists(model_path) or not os.path.exists(vocab_path):
-                logger.warning(f"Arquivos não encontrados para {lang_code}: {model_path}, {vocab_path}")
-                continue
-            
-            logger.info(f"Carregando modelo {lang_code}: {model_path}")
-            f5tts_models[lang_code] = F5TTS(ckpt_file=model_path, vocab_file=vocab_path)
-            logger.info(f"Modelo {lang_code} carregado com sucesso!")
-        except Exception as e:
-            logger.error(f"Erro ao carregar modelo {model_config}: {e}")
-
-logger.info(f"Modelos disponíveis: {list(f5tts_models.keys())}")
+f5tts = F5TTS()
+logger.info("Modelo F5 TTS carregado com sucesso!")
 
 # Variável para controlar se a transcrição automática deve ser desabilitada
 DISABLE_AUTO_TRANSCRIPTION = os.environ.get("DISABLE_AUTO_TRANSCRIPTION", "true").lower() == "true"
@@ -198,9 +164,8 @@ def handler(job):
         "input": {
             "gen_text": "Texto para gerar o áudio",
             "ref_audio_url": "gs://bucket/path/to/reference.wav",
-            "ref_text": "Texto falado no áudio de referência (opcional)",
+            "ref_text": "Texto falado no áudio de referência",
             "voice_id": "identificador_unico_da_voz",
-            "language": "default|en|zh|es|fr|de|it|ja|ru|hi|fi - Código do idioma",
             "output_path": "path/to/output.wav" (opcional),
             "speed": 1.0 (opcional)
         }
@@ -220,11 +185,10 @@ def handler(job):
         gen_text = job_input.get("gen_text")
         ref_audio_url = job_input.get("ref_audio_url")
         ref_text = job_input.get("ref_text", "")  # Texto de referência opcional
-        language = job_input.get("language", "default")  # Idioma do modelo
+        language = job_input.get("language", "de
         voice_id = job_input.get("voice_id")
         output_path = job_input.get("output_path", f"outputs/{voice_id}/output_{job['id']}.wav")
-        speed = job_input.get("speed", 1.0)  # Velocidade de síntese (padrão: 1.0)
-        
+        speed = job_input.get("speed",
         if not gen_text:
             return {"error": "gen_text é obrigatório"}
         if not ref_audio_url:
@@ -239,12 +203,6 @@ def handler(job):
         # Se ref_text não fornecido, usar texto genérico para evitar transcrição
         if not ref_text:
             ref_text = "Audio de referência para clonagem de voz."
-        
-        # Selecionar modelo baseado no idioma
-        if language not in f5tts_models:
-            return {"error": f"Idioma '{language}' não disponível. Modelos disponíveis: {list(f5tts_models.keys())}"}
-        
-        f5tts = f5tts_models[language]
         
         logger.info(f"Processando job {job['id']}")
         logger.info(f"Texto: {gen_text[:100]}...")

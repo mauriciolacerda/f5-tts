@@ -11,18 +11,42 @@ git config --global credential.helper store
 git config --global core.askPass ""
 export GIT_TERMINAL_PROMPT=0
 
-# Baixar modelos customizados se configurados
-if [ -n "$F5_DOWNLOAD_MODELS" ]; then
-    echo "Baixando modelos customizados: $F5_DOWNLOAD_MODELS"
-    IFS=',' read -ra MODELS <<< "$F5_DOWNLOAD_MODELS"
-    for model_lang in "${MODELS[@]}"; do
-        if [ -d "/root/.cache/f5-tts/$model_lang" ]; then
-            echo "Modelo $model_lang já existe, pulando download..."
-        else
-            echo "Baixando modelo: $model_lang"
-            /app/download_models.sh "$model_lang"
+# Substituir modelo padrão pelo espanhol se configurado
+if [ "$REPLACE_MODEL_WITH_SPANISH" = "true" ]; then
+    echo "Substituindo modelo padrão pelo modelo espanhol..."
+    
+    # Aguardar F5-TTS criar o cache (se necessário)
+    sleep 2
+    
+    # Encontrar o diretório do modelo padrão
+    MODEL_DIR=$(find /root/.cache/huggingface/hub -type d -name "models--SWivid--F5-TTS" 2>/dev/null | head -n 1)
+    
+    if [ -n "$MODEL_DIR" ]; then
+        # Encontrar o snapshot mais recente
+        SNAPSHOT_DIR=$(find "$MODEL_DIR/snapshots" -type d -maxdepth 1 | tail -n 1)
+        
+        if [ -n "$SNAPSHOT_DIR" ]; then
+            MODEL_FILE="$SNAPSHOT_DIR/F5TTS_Base/model_1200000.safetensors"
+            
+            if [ -f "$MODEL_FILE" ]; then
+                echo "Backup do modelo original..."
+                mv "$MODEL_FILE" "$MODEL_FILE.bak"
+                
+                echo "Copiando modelo espanhol..."
+                if [ -f "/root/.cache/f5-tts/es/model.safetensors" ]; then
+                    cp "/root/.cache/f5-tts/es/model.safetensors" "$MODEL_FILE"
+                    echo "✓ Modelo espanhol instalado com sucesso!"
+                else
+                    echo "✗ Modelo espanhol não encontrado, restaurando original..."
+                    mv "$MODEL_FILE.bak" "$MODEL_FILE"
+                fi
+            else
+                echo "Arquivo do modelo não encontrado: $MODEL_FILE"
+            fi
         fi
-    done
+    else
+        echo "Diretório do modelo F5-TTS não encontrado no cache"
+    fi
 fi
 
 # Diretório para clonar o repositório
